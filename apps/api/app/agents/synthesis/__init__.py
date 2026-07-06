@@ -1,0 +1,2 @@
+"""Synthesis agent boundary."""
+

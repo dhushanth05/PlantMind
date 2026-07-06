@@ -1,0 +1,69 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: infra/docker/api.Dockerfile
+    env_file:
+      - path: .env
+        required: false
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./apps/api:/app
+      - plantmind-documents:/data/documents
+    depends_on:
+      - mongodb
+      - neo4j
+      - redis
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  web:
+    build:
+      context: .
+      dockerfile: infra/docker/web.Dockerfile
+    env_file:
+      - path: .env
+        required: false
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./apps/web:/web
+      - /web/node_modules
+    depends_on:
+      - api
+    command: npm run dev -- --host 0.0.0.0
+
+  mongodb:
+    image: mongo:7
+    ports:
+      - "27017:27017"
+    volumes:
+      - plantmind-mongodb:/data/db
+      - ./infra/mongo/init:/docker-entrypoint-initdb.d:ro
+
+  neo4j:
+    image: neo4j:5-community
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    environment:
+      NEO4J_AUTH: neo4j/plantmind-local-password
+      NEO4J_PLUGINS: '["apoc"]'
+    volumes:
+      - plantmind-neo4j-data:/data
+      - plantmind-neo4j-logs:/logs
+      - ./infra/neo4j:/var/lib/neo4j/import
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - plantmind-redis:/data
+
+volumes:
+  plantmind-documents:
+  plantmind-mongodb:
+  plantmind-neo4j-data:
+  plantmind-neo4j-logs:
+  plantmind-redis:

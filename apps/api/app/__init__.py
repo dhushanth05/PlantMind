@@ -1,0 +1,2 @@
+"""PlantMind backend application package."""
+
