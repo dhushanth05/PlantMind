@@ -1,5 +1,14 @@
-# PlantMind
+# 🌿 PlantMind
 
+> **AI-Powered Industrial Knowledge Intelligence Platform**
+
+Transform industrial documents into searchable operational intelligence using AI, hybrid retrieval, knowledge graphs, and a grounded AI copilot.
+
+---
+
+<p align="center">
+  <img src="docs/screenshots/dashboard.png" width="90%">
+</p>
 > Industrial knowledge intelligence for plant teams: upload technical PDFs, extract evidence, explore equipment relationships, ask a grounded copilot, review operational analytics, and reset demo data safely.
 
 PlantMind is a hackathon-ready full-stack application for turning industrial documents into searchable operational knowledge. It combines a FastAPI ingestion and intelligence backend with a React workspace for document upload, hybrid search, graph exploration, asset context, copilot Q&A, dashboards, and demo-safe factory reset.
