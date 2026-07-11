@@ -32,6 +32,9 @@ const AlertsCenterPage = lazy(() =>
 const ExecutiveAnalyticsPage = lazy(() =>
   import("@/features/analytics/ExecutiveAnalyticsPage").then((module) => ({ default: module.ExecutiveAnalyticsPage })),
 );
+const SettingsPage = lazy(() =>
+  import("@/features/settings/SettingsPage").then((module) => ({ default: module.SettingsPage })),
+);
 
 export function App() {
   return (
@@ -141,7 +144,14 @@ function PlantMindApp() {
               </Suspense>
             }
           />
-          <Route path="/settings" element={<ModuleWorkspacePage moduleId="settings" />} />
+          <Route
+            path="/settings"
+            element={
+              <Suspense fallback={<LoadingState label="Loading Settings" />}>
+                <SettingsPage />
+              </Suspense>
+            }
+          />
         </Route>
       </Routes>
     </QueryClientProvider>
