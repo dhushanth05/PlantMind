@@ -409,9 +409,6 @@ Add screenshots to `docs/screenshots/` and update the placeholder paths below.
 | ![Knowledge Graph Screenshot Placeholder](docs/screenshots/knowledge-graph.png) | ![Analytics Screenshot Placeholder](docs/screenshots/analytics.png) | ![Factory Reset Screenshot Placeholder](docs/screenshots/factory-reset.png) |
 | React Flow graph explorer with node drawer and analytics | Executive analytics workspace | Guarded reset dialog in Settings |
 
-Additional placeholder:
-
-![Hybrid Search Screenshot Placeholder](docs/screenshots/search-results.png)
 
 ## Demo Workflow
 
