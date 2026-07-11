@@ -22,7 +22,7 @@ class PDFProcessor:
             extraction = await asyncio.to_thread(self._extract_with_pdfplumber, pdf_bytes)
             method = "pdfplumber"
         except DocumentPipelineError:
-            logger.warning("pdfplumber_failed_using_pypdf2_fallback", extra={"filename": filename})
+            logger.warning("pdfplumber_failed_using_pypdf2_fallback", extra={"document_filename": filename})
             extraction = await asyncio.to_thread(self._extract_with_pypdf2, pdf_bytes)
             method = "pypdf2"
 
@@ -33,7 +33,7 @@ class PDFProcessor:
         is_scanned = self._is_scanned(extraction["document_text"], extraction["page_count"])
         if is_scanned:
             if settings.gemini_api_key:
-                logger.info("scanned_pdf_detected_using_gemini_ocr", extra={"filename": filename})
+                logger.info("scanned_pdf_detected_using_gemini_ocr", extra={"document_filename": filename})
                 ocr_text = await self._extract_with_gemini_vision(pdf_bytes, filename)
                 return PDFExtractionResult(
                     document_text=ocr_text,
@@ -43,7 +43,7 @@ class PDFProcessor:
                     is_scanned=True,
                 )
 
-            logger.warning("scanned_pdf_detected_without_gemini_key", extra={"filename": filename})
+            logger.warning("scanned_pdf_detected_without_gemini_key", extra={"document_filename": filename})
             method = f"{method}_scanned_no_ocr_configured"
 
         return PDFExtractionResult(
@@ -103,7 +103,7 @@ class PDFProcessor:
         try:
             text = await asyncio.to_thread(run_ocr)
         except Exception as exc:
-            logger.exception("gemini_vision_ocr_failed", extra={"filename": filename})
+            logger.exception("gemini_vision_ocr_failed", extra={"document_filename": filename})
             raise DocumentPipelineError(f"Gemini Vision OCR failed for {filename}: {exc}") from exc
 
         if not text.strip():

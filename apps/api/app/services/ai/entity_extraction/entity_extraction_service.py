@@ -6,8 +6,6 @@ from hashlib import sha1
 from typing import Any
 
 import google.generativeai as genai
-import spacy
-from spacy.language import Language
 
 from app.core.config import settings
 from app.domain.documents.schemas import EntityExtractionResult, EntityItem
@@ -17,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 class EntityExtractionService:
     def __init__(self) -> None:
-        self._nlp: Language | None = None
+        self._nlp: Any | None = None
 
     async def extract(self, text: str) -> EntityExtractionResult:
         spacy_entities = await asyncio.to_thread(self._extract_with_spacy, text)
@@ -25,9 +23,24 @@ class EntityExtractionService:
         gemini_entities = await self._extract_with_gemini(text) if settings.gemini_api_key else EntityExtractionResult()
         return self._merge_results(spacy_entities, industrial_entities, gemini_entities)
 
-    def _load_spacy(self) -> Language:
+    def _load_spacy(self) -> Any:
         if self._nlp is not None:
             return self._nlp
+        try:
+            import spacy
+        except ModuleNotFoundError:
+            from app.services.ai.optional_ml import ensure_optional_ml_dependencies
+
+            try:
+                ensure_optional_ml_dependencies()
+                import spacy
+            except Exception as exc:
+                logger.warning(
+                    "spacy_unavailable_using_pattern_entities_only",
+                    extra={"error_type": type(exc).__name__},
+                )
+                return None
+
         try:
             self._nlp = spacy.load(settings.spacy_model)
         except OSError:
@@ -38,6 +51,8 @@ class EntityExtractionService:
 
     def _extract_with_spacy(self, text: str) -> EntityExtractionResult:
         nlp = self._load_spacy()
+        if nlp is None:
+            return EntityExtractionResult()
         doc = nlp(text[:1_000_000])
         result = EntityExtractionResult()
         for entity in doc.ents:

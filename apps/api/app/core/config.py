@@ -2,7 +2,18 @@ from pathlib import Path
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-ROOT_DIR = Path(__file__).resolve().parents[4]
+
+def find_root_dir() -> Path:
+    current = Path(__file__).resolve()
+    for parent in current.parents:
+        if (parent / ".env").exists() or (parent / "docker-compose.yml").exists():
+            return parent
+    return current.parents[2]
+
+
+ROOT_DIR = find_root_dir()
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=ROOT_DIR / ".env", env_file_encoding="utf-8", extra="ignore")
 
@@ -12,6 +23,7 @@ class Settings(BaseSettings):
 
     mongodb_uri: str = "mongodb://mongodb:27017/plantmind"
     mongodb_database: str = "plantmind"
+    mongodb_vector_index: str = Field(default="plantmind_vector_index", alias="MONGODB_VECTOR_INDEX")
     neo4j_uri: str = "bolt://neo4j:7687"
     neo4j_username: str = "neo4j"
     neo4j_password: str = "plantmind-local-password"

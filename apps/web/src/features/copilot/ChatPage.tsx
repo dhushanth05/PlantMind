@@ -68,6 +68,7 @@ export function ChatPage() {
         citations: response.citations,
         relatedAssets: response.related_assets,
         followUpQuestions: response.follow_up_questions,
+        demoMode: isDemoModeResponse(response.answer),
         status: "complete",
       });
     } catch (error) {
@@ -207,6 +208,14 @@ export function ChatPage() {
         </SectionCard>
       </aside>
     </motion.div>
+  );
+}
+
+function isDemoModeResponse(answer: string) {
+  return (
+    answer.startsWith("Demo Mode:") ||
+    answer.startsWith("Based on retrieved PlantMind evidence:") ||
+    answer === "No supporting evidence was found in the uploaded documents."
   );
 }
 

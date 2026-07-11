@@ -7,8 +7,9 @@ from fastapi import APIRouter, File, HTTPException, UploadFile, status
 
 from app.agents.ingestion.agent import IngestionAgent
 from app.core.config import settings
+from app.db.mongodb.repositories import DocumentRepository
 from app.domain.documents.exceptions import DocumentPipelineError, UnsupportedDocumentError
-from app.domain.documents.schemas import DocumentUploadResponse
+from app.domain.documents.schemas import DocumentListResponse, DocumentUploadResponse
 from app.workflows.ingestion_workflow import create_initial_document_record
 
 router = APIRouter()
@@ -18,6 +19,12 @@ logger = logging.getLogger(__name__)
 @router.get("/health")
 async def documents_health() -> dict[str, str]:
     return {"module": "documents", "status": "ready"}
+
+
+@router.get("", response_model=DocumentListResponse)
+async def list_documents() -> DocumentListResponse:
+    repository = DocumentRepository()
+    return DocumentListResponse(documents=await repository.list_documents())
 
 
 @router.post("/upload", response_model=DocumentUploadResponse, status_code=status.HTTP_201_CREATED)

@@ -4,6 +4,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 from app.db.mongodb.client import mongo_database
+from motor.motor_asyncio import AsyncIOMotorDatabase
 from app.db.neo4j.graph_repository import GraphRepository
 from app.domain.dashboard.schemas import (
     DashboardActivity,
@@ -25,10 +26,14 @@ DEPENDENCY_TIMEOUT_SECONDS = 2.0
 
 class DashboardService:
     def __init__(self, graph_repository: GraphRepository | None = None) -> None:
-        self.db = mongo_database.database
         self.graph_repository = graph_repository or GraphRepository()
 
+    @property
+    def db(self) -> AsyncIOMotorDatabase:
+        return mongo_database.database
+
     async def get_dashboard(self) -> DashboardResponse:
+        logger.info("dashboard_service_start")
         (
             graph_overview,
             most_connected_assets,
@@ -40,15 +45,24 @@ class DashboardService:
             alert_rows,
             asset_event_count,
         ) = await asyncio.gather(
-            self._safe_graph_call(self.graph_repository.get_overview, self._empty_graph_overview()),
-            self._safe_graph_call(lambda: self.graph_repository.most_connected_assets(limit=5), []),
-            self._safe_graph_call(lambda: self.graph_repository.critical_equipment(limit=5), []),
-            self._safe_graph_call(lambda: self.graph_repository.frequent_failure_modes(limit=5), []),
-            self._safe_dependency_call(self._documents_summary, {"total": 0, "processed": 0, "failed": 0, "uploaded": 0}),
-            self._safe_dependency_call(self._recent_uploads, []),
-            self._safe_dependency_call(lambda: self._count_collection("incidents"), 0),
-            self._safe_dependency_call(self._recent_alert_rows, []),
-            self._safe_dependency_call(lambda: self._count_collection("asset_events"), 0),
+            self._safe_graph_call("graph_overview", self.graph_repository.get_overview, self._empty_graph_overview()),
+            self._safe_graph_call("graph_most_connected_assets", lambda: self.graph_repository.most_connected_assets(limit=5), []),
+            self._safe_graph_call("graph_critical_equipment", lambda: self.graph_repository.critical_equipment(limit=5), []),
+            self._safe_graph_call("graph_frequent_failure_modes", lambda: self.graph_repository.frequent_failure_modes(limit=5), []),
+            self._safe_dependency_call("mongo_documents_summary", self._documents_summary, {"total": 0, "processed": 0, "failed": 0, "uploaded": 0}),
+            self._safe_dependency_call("mongo_recent_uploads", self._recent_uploads, []),
+            self._safe_dependency_call("mongo_incident_count", lambda: self._count_collection("incidents"), 0),
+            self._safe_dependency_call("mongo_recent_alert_rows", self._recent_alert_rows, []),
+            self._safe_dependency_call("mongo_asset_event_count", lambda: self._count_collection("asset_events"), 0),
+        )
+        logger.info(
+            "dashboard_dependencies_complete",
+            extra={
+                "graph_nodes": graph_overview.get("total_nodes", 0),
+                "uploads": len(recent_uploads),
+                "alerts": len(alert_rows),
+                "incidents": incident_count,
+            },
         )
 
         assets_count = self._node_type_count(graph_overview, "Equipment")
@@ -65,7 +79,8 @@ class DashboardService:
             asset_event_count=asset_event_count,
         )
 
-        return DashboardResponse(
+        logger.info("dashboard_response_model_build_start")
+        response = DashboardResponse(
             stats=[
                 DashboardStat(
                     label="Total Documents",
@@ -121,26 +136,34 @@ class DashboardService:
                 DashboardQuickAction(label="Review Alerts", description="Triage high-priority signals", path="/alerts"),
             ],
         )
+        logger.info("dashboard_response_model_build_complete")
+        return response
 
     async def _documents_summary(self) -> dict[str, int]:
         try:
+            logger.info("dashboard_mongo_documents_summary_start")
             pipeline = [
                 {"$group": {"_id": "$status", "count": {"$sum": 1}}},
             ]
             rows = [row async for row in self.db.documents.aggregate(pipeline)]
             by_status = {str(row.get("_id") or "unknown"): int(row.get("count", 0)) for row in rows}
-            return {
+            summary = {
                 "total": sum(by_status.values()),
                 "processed": by_status.get("processed", 0),
+                "completed": by_status.get("completed", 0),
                 "failed": by_status.get("failed", 0),
                 "uploaded": by_status.get("uploaded", 0),
             }
+            summary["processed"] += summary.pop("completed")
+            logger.info("dashboard_mongo_documents_summary_complete", extra=summary)
+            return summary
         except Exception:
             logger.exception("dashboard_documents_summary_failed")
             return {"total": 0, "processed": 0, "failed": 0, "uploaded": 0}
 
     async def _recent_uploads(self) -> list[dict[str, Any]]:
         try:
+            logger.info("dashboard_mongo_recent_uploads_start")
             cursor = (
                 self.db.documents.find(
                     {},
@@ -155,7 +178,9 @@ class DashboardService:
                 .sort("upload_timestamp", -1)
                 .limit(6)
             )
-            return [document async for document in cursor]
+            uploads = [document async for document in cursor]
+            logger.info("dashboard_mongo_recent_uploads_complete", extra={"count": len(uploads)})
+            return uploads
         except Exception:
             logger.exception("dashboard_recent_uploads_failed")
             return []
@@ -163,6 +188,7 @@ class DashboardService:
     async def _recent_alert_rows(self) -> list[dict[str, Any]]:
         rows: list[dict[str, Any]] = []
         try:
+            logger.info("dashboard_mongo_asset_alerts_start")
             cursor = (
                 self.db.asset_events.find(
                     {"$or": [{"severity": {"$in": ["High", "Critical"]}}, {"event_type": "Incident"}]},
@@ -172,6 +198,7 @@ class DashboardService:
                 .limit(5)
             )
             rows = [document async for document in cursor]
+            logger.info("dashboard_mongo_asset_alerts_complete", extra={"count": len(rows)})
         except Exception:
             logger.exception("dashboard_asset_alerts_failed")
 
@@ -179,35 +206,47 @@ class DashboardService:
             return rows
 
         try:
+            logger.info("dashboard_mongo_incident_alerts_start")
             cursor = (
                 self.db.incidents.find({}, {"incident_id": 1, "name": 1, "type": 1, "created_at": 1, "metadata": 1})
                 .sort("created_at", -1)
                 .limit(5)
             )
-            return [document async for document in cursor]
+            incidents = [document async for document in cursor]
+            logger.info("dashboard_mongo_incident_alerts_complete", extra={"count": len(incidents)})
+            return incidents
         except Exception:
             logger.exception("dashboard_incident_alerts_failed")
             return []
 
     async def _count_collection(self, collection: str) -> int:
         try:
-            return int(await self.db[collection].count_documents({}))
+            logger.info("dashboard_mongo_count_start", extra={"collection": collection})
+            count = int(await self.db[collection].count_documents({}))
+            logger.info("dashboard_mongo_count_complete", extra={"collection": collection, "count": count})
+            return count
         except Exception:
             logger.exception("dashboard_count_failed", extra={"collection": collection})
             return 0
 
-    async def _safe_graph_call(self, call, fallback):
+    async def _safe_graph_call(self, step: str, call, fallback):
         try:
-            return await asyncio.wait_for(call(), timeout=DEPENDENCY_TIMEOUT_SECONDS)
+            logger.info("dashboard_graph_call_start", extra={"step": step})
+            result = await asyncio.wait_for(call(), timeout=DEPENDENCY_TIMEOUT_SECONDS)
+            logger.info("dashboard_graph_call_complete", extra={"step": step})
+            return result
         except Exception:
-            logger.exception("dashboard_graph_call_failed")
+            logger.exception("dashboard_graph_call_failed", extra={"step": step})
             return fallback
 
-    async def _safe_dependency_call(self, call, fallback):
+    async def _safe_dependency_call(self, step: str, call, fallback):
         try:
-            return await asyncio.wait_for(call(), timeout=DEPENDENCY_TIMEOUT_SECONDS)
+            logger.info("dashboard_dependency_call_start", extra={"step": step})
+            result = await asyncio.wait_for(call(), timeout=DEPENDENCY_TIMEOUT_SECONDS)
+            logger.info("dashboard_dependency_call_complete", extra={"step": step})
+            return result
         except Exception:
-            logger.exception("dashboard_dependency_call_failed")
+            logger.exception("dashboard_dependency_call_failed", extra={"step": step})
             return fallback
 
     @staticmethod

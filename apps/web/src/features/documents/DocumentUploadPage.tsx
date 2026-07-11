@@ -1,4 +1,4 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import {
   AlertCircle,
@@ -21,10 +21,13 @@ import { ChangeEvent, DragEvent, useMemo, useRef, useState } from "react";
 
 import { SectionCard } from "@/components/dashboard/SectionCard";
 import { EmptyState } from "@/components/shared/EmptyState";
+import { ErrorState } from "@/components/shared/ErrorState";
+import { LoadingState } from "@/components/shared/LoadingState";
+import { invalidateOperationalData, queryKeys } from "@/lib/query-keys";
 import { cn } from "@/lib/utils";
 
-import { getUploadErrorMessage, isCancelledUpload, uploadPdfDocuments } from "./api";
-import type { DocumentUploadResult, UploadHistoryItem, UploadStage, UploadStatus } from "./types";
+import { fetchDocuments, getUploadErrorMessage, isCancelledUpload, uploadPdfDocuments } from "./api";
+import type { DocumentSummary, DocumentUploadResult, UploadStage, UploadStatus } from "./types";
 
 type QueueItem = {
   id: string;
@@ -65,7 +68,6 @@ export function DocumentUploadPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const stageTimersRef = useRef<Record<string, number>>({});
   const [queue, setQueue] = useState<QueueItem[]>([]);
-  const [history, setHistory] = useState<UploadHistoryItem[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [dropError, setDropError] = useState<string | null>(null);
 
@@ -73,6 +75,12 @@ export function DocumentUploadPage() {
     () => queue.filter((item) => item.status === "uploading" || item.status === "processing").length,
     [queue],
   );
+
+  const documentsQuery = useQuery({
+    queryKey: queryKeys.documents,
+    queryFn: fetchDocuments,
+    refetchInterval: activeUploads ? 5_000 : 30_000,
+  });
 
   const uploadMutation = useMutation({
     mutationFn: ({ itemId, file, controller }: UploadMutationInput) => {
@@ -84,7 +92,7 @@ export function DocumentUploadPage() {
         });
       });
     },
-    onSuccess: async (documents, { itemId, file }) => {
+    onSuccess: async (documents, { itemId }) => {
       stopStageTimer(itemId);
       const result = documents[0];
       const timestamp = new Date().toISOString();
@@ -98,24 +106,9 @@ export function DocumentUploadPage() {
         controller: undefined,
       });
 
-      const historyItem: UploadHistoryItem = {
-        id: itemId,
-        documentName: file.name,
-        documentId: result?.document_id,
-        status: "completed",
-        timestamp,
-      };
-
-      setHistory((current) => [historyItem, ...current].slice(0, 12));
-
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["dashboard"] }),
-        queryClient.invalidateQueries({ queryKey: ["graph"] }),
-        queryClient.invalidateQueries({ queryKey: ["assets"] }),
-        queryClient.invalidateQueries({ queryKey: ["copilot-context"] }),
-      ]);
+      await invalidateOperationalData(queryClient);
     },
-    onError: (error, { itemId, file }) => {
+    onError: (error, { itemId }) => {
       stopStageTimer(itemId);
       const status = isCancelledUpload(error) ? "cancelled" : "failed";
       const timestamp = new Date().toISOString();
@@ -127,14 +120,7 @@ export function DocumentUploadPage() {
         completedAt: timestamp,
       });
 
-      const historyItem: UploadHistoryItem = {
-        id: itemId,
-        documentName: file.name,
-        status,
-        timestamp,
-      };
-
-      setHistory((current) => [historyItem, ...current].slice(0, 12));
+      void queryClient.invalidateQueries({ queryKey: queryKeys.documents });
     },
   });
 
@@ -308,16 +294,33 @@ export function DocumentUploadPage() {
         </SectionCard>
 
         <SectionCard title="Recent uploads" description="Live ingestion outcomes from this session">
-          {history.length ? (
-            <div className="space-y-3">
-              {history.map((item) => (
-                <HistoryRow key={`${item.id}-${item.timestamp}`} item={item} />
-              ))}
+          <div className="mb-3 flex justify-end">
+            <button
+              type="button"
+              onClick={() => void documentsQuery.refetch()}
+              className="inline-flex h-8 items-center gap-2 rounded-md border border-border px-3 text-xs font-medium hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 dark:hover:bg-slate-900"
+              disabled={documentsQuery.isFetching}
+            >
+              <RefreshCcw className={cn("h-3.5 w-3.5", documentsQuery.isFetching && "animate-spin")} />
+              Refresh
+            </button>
+          </div>
+          {documentsQuery.isLoading ? (
+            <LoadingState label="Loading uploaded documents" />
+          ) : documentsQuery.isError ? (
+            <ErrorState message="Uploaded documents could not be loaded. You can retry with refresh." />
+          ) : documentsQuery.data?.length ? (
+
+            <div className="max-h-[650px] overflow-y-auto pr-2 space-y-3">
+              {documentsQuery.data.slice(0, 12).map((item) => (
+                <HistoryRow key={item.document_id} item={item} />
+                ))}
             </div>
           ) : (
             <EmptyState title="No uploads yet" description="Completed, failed, and cancelled uploads will appear here." />
           )}
         </SectionCard>
+        
       </section>
 
       <SectionCard title="Upload queue" description="Track progress, processing stages, and backend ingestion results">
@@ -481,17 +484,35 @@ function UploadResultPanel({ result }: { result: DocumentUploadResult }) {
   );
 }
 
-function HistoryRow({ item }: { item: UploadHistoryItem }) {
+function HistoryRow({ item }: { item: DocumentSummary }) {
   return (
     <div className="rounded-md border border-border bg-slate-50 p-3 dark:bg-slate-900">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="truncate text-sm font-medium">{item.documentName}</p>
-          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{formatTime(item.timestamp)}</p>
-          {item.documentId ? <p className="mt-1 truncate text-xs text-slate-500 dark:text-slate-400">{item.documentId}</p> : null}
+          <p className="truncate text-sm font-medium">{item.filename}</p>
+          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+            {formatBytes(item.file_size_bytes)} - Uploaded {formatTime(item.upload_timestamp)}
+          </p>
+          <p className="mt-1 truncate text-xs text-slate-500 dark:text-slate-400">{item.document_id}</p>
+          <div className="mt-3 grid grid-cols-2 gap-2 text-xs sm:grid-cols-4">
+            <HistoryMetric label="Entities" value={item.extracted_entities.toLocaleString()} />
+            <HistoryMetric label="Chunks" value={item.chunks_created.toLocaleString()} />
+            <HistoryMetric label="Graph nodes" value={item.graph_nodes_created.toLocaleString()} />
+            <HistoryMetric label="Duration" value={formatDuration(item.processing_duration_ms)} />
+          </div>
+          {item.error ? <p className="mt-2 text-xs text-red-600 dark:text-red-300">{item.error}</p> : null}
         </div>
-        <StatusBadge status={item.status} />
+        <StatusBadge status={normalizeDocumentStatus(item.status)} />
       </div>
+    </div>
+  );
+}
+
+function HistoryMetric({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <p className="text-slate-500 dark:text-slate-400">{label}</p>
+      <p className="font-medium text-slate-900 dark:text-slate-100">{value}</p>
     </div>
   );
 }
@@ -541,4 +562,26 @@ function formatTime(timestamp: string) {
     month: "short",
     day: "numeric",
   }).format(new Date(timestamp));
+}
+
+function formatDuration(durationMs?: number | null) {
+  if (durationMs == null) {
+    return "Pending";
+  }
+
+  if (durationMs < 1000) {
+    return `${durationMs} ms`;
+  }
+
+  return `${(durationMs / 1000).toFixed(1)} s`;
+}
+
+function normalizeDocumentStatus(status: string): UploadStatus {
+  if (status === "completed" || status === "processed") {
+    return "completed";
+  }
+  if (status === "failed") {
+    return "failed";
+  }
+  return "processing";
 }

@@ -5,6 +5,7 @@ from typing import Any
 
 from app.db.mongodb.client import mongo_database
 from app.db.neo4j.graph_repository import GraphRepository
+from motor.motor_asyncio import AsyncIOMotorDatabase
 from app.domain.risk.schemas import (
     RiskAlert,
     RiskAsset,
@@ -22,8 +23,11 @@ DEPENDENCY_TIMEOUT_SECONDS = 2.0
 
 class RiskDashboardService:
     def __init__(self, graph_repository: GraphRepository | None = None) -> None:
-        self.db = mongo_database.database
         self.graph_repository = graph_repository or GraphRepository()
+
+    @property
+    def db(self) -> AsyncIOMotorDatabase:
+        return mongo_database.database
 
     async def get_dashboard(self) -> RiskDashboardResponse:
         critical_assets, failure_modes, alerts, timeline, incident_count = await asyncio.gather(

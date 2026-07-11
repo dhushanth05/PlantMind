@@ -73,7 +73,7 @@ const dashboardClient = axios.create({
   timeout: 30_000,
 });
 
-export async function fetchDashboardData(): Promise<DashboardData> {
-  const response = await dashboardClient.get<DashboardData>("/dashboard");
+export async function fetchDashboardData(signal?: AbortSignal): Promise<DashboardData> {
+  const response = await dashboardClient.get<DashboardData>("/dashboard", { signal });
   return response.data;
 }

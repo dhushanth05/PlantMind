@@ -5,7 +5,7 @@ import { fetchDashboardData } from "@/features/dashboard/api/dashboard";
 export function useDashboardData() {
   return useQuery({
     queryKey: ["dashboard"],
-    queryFn: fetchDashboardData,
+    queryFn: ({ signal }) => fetchDashboardData(signal),
     refetchInterval: 30_000,
   });
 }

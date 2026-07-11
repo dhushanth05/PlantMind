@@ -32,7 +32,11 @@ class HybridRetriever:
         entities = await self.entity_extraction.extract(query)
         analysis = QueryAnalysis(query=query, embedding=query_embedding, entities=entities)
 
-        hits = await self.vector_search.search(query_embedding=analysis.embedding, top_k=effective_top_k * 2)
+        hits = await self.vector_search.search(
+            query=analysis.query,
+            query_embedding=analysis.embedding,
+            top_k=effective_top_k * 2,
+        )
         graph_context = await self.graph_context.expand(analysis.entities, depth=2, limit=100)
         evidence = self.ranking.rank(
             hits=hits,
@@ -50,4 +54,3 @@ class HybridRetriever:
             },
         )
         return context
-

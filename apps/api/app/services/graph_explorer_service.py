@@ -1,4 +1,6 @@
 import hashlib
+from datetime import date, datetime
+from typing import Any
 
 from app.db.neo4j.graph_repository import GraphRepository
 from app.db.redis.cache import RedisCache
@@ -124,12 +126,14 @@ class GraphExplorerService:
 
     @staticmethod
     def _normalize_node(raw: dict) -> GraphNode:
-        properties = {key: value for key, value in raw.items() if key not in {"id", "labels"}}
+        properties = {key: _json_safe(value) for key, value in raw.items() if key not in {"id", "labels"}}
         return GraphNode(id=str(raw["id"]), labels=list(raw.get("labels", [])), properties=properties)
 
     @staticmethod
     def _normalize_relationship(raw: dict) -> GraphRelationship:
-        properties = {key: value for key, value in raw.items() if key not in {"id", "type", "source", "target"}}
+        properties = {
+            key: _json_safe(value) for key, value in raw.items() if key not in {"id", "type", "source", "target"}
+        }
         return GraphRelationship(
             id=str(raw["id"]),
             type=str(raw["type"]),
@@ -143,3 +147,17 @@ class GraphExplorerService:
         joined = "|".join(str(part) for part in parts)
         digest = hashlib.sha256(joined.encode("utf-8")).hexdigest()
         return f"{prefix}:{digest}"
+
+
+def _json_safe(value: Any) -> Any:
+    if isinstance(value, datetime | date):
+        return value.isoformat()
+    if hasattr(value, "iso_format"):
+        return value.iso_format()
+    if hasattr(value, "isoformat"):
+        return value.isoformat()
+    if isinstance(value, list):
+        return [_json_safe(item) for item in value]
+    if isinstance(value, dict):
+        return {str(key): _json_safe(item) for key, item in value.items()}
+    return value

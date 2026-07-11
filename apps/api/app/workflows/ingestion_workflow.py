@@ -154,6 +154,12 @@ class IngestionWorkflow:
         await self.cache.delete_pattern("digital_twin:*")
 
         graph_result = state["graph_result"]
+        await self.document_repository.mark_completed(
+            state["document_id"],
+            chunks_created=len(state["chunks"]),
+            entities_found=state["entities"].total_count,
+            graph_result=graph_result,
+        )
         response = DocumentUploadResult(
             document_id=state["document_id"],
             chunks_created=len(state["chunks"]),

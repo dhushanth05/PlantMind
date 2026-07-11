@@ -4,7 +4,7 @@ from app.core.config import settings
 from app.db.neo4j.client import neo4j_database
 
 
-SEARCH_LABELS = ["Equipment", "Person", "Procedure", "Incident", "Document"]
+SEARCH_LABELS = ["Equipment", "Person", "Procedure", "Incident", "Document", "FailureMode"]
 
 
 class GraphRepository:
@@ -67,10 +67,20 @@ class GraphRepository:
             n.person_id,
             n.procedure_id,
             n.incident_id,
+            n.failure_mode_id,
             n.document_id
           ] WHERE value IS NOT NULL AND toLower(toString(value)) CONTAINS $query)
         WITH n
-        ORDER BY coalesce(n.name, n.filename, n.equipment_id, n.person_id, n.procedure_id, n.incident_id, n.document_id)
+        ORDER BY coalesce(
+          n.name,
+          n.filename,
+          n.equipment_id,
+          n.person_id,
+          n.procedure_id,
+          n.incident_id,
+          n.failure_mode_id,
+          n.document_id
+        )
         SKIP $offset
         LIMIT $limit
         RETURN collect(n {.*, id: elementId(n), labels: labels(n)}) AS nodes
@@ -85,6 +95,7 @@ class GraphRepository:
             n.person_id,
             n.procedure_id,
             n.incident_id,
+            n.failure_mode_id,
             n.document_id
           ] WHERE value IS NOT NULL AND toLower(toString(value)) CONTAINS $query)
         RETURN count(n) AS total
@@ -110,6 +121,7 @@ class GraphRepository:
            OR center.person_id = $node_id
            OR center.procedure_id = $node_id
            OR center.incident_id = $node_id
+           OR center.failure_mode_id = $node_id
         OPTIONAL MATCH path = (center)-[*{depth_range}]-(neighbor)
         WITH center, [p IN collect(path) WHERE p IS NOT NULL][..$limit] AS paths
         UNWIND CASE WHEN paths = [] THEN [null] ELSE paths END AS node_path
@@ -231,6 +243,7 @@ class GraphRepository:
                    OR n.person_id = $node_id
                    OR n.procedure_id = $node_id
                    OR n.incident_id = $node_id
+                   OR n.failure_mode_id = $node_id
                 RETURN n {.*, id: elementId(n), labels: labels(n)} AS node
                 """,
                 node_id=node_id,

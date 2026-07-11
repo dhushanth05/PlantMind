@@ -3,6 +3,7 @@ import asyncio
 
 import pytest
 from fastapi.testclient import TestClient
+from google.api_core.exceptions import ResourceExhausted
 
 from app.api.v1.routes.chat import get_chat_service
 from app.domain.chat.schemas import ChatRequest, ConversationTurn, GeminiGroundedResponse
@@ -59,6 +60,18 @@ class FakeRetriever:
         )
 
 
+class EmptyRetriever:
+    async def retrieve(self, query: str, top_k: int | None = None) -> RetrievalContext:
+        return RetrievalContext(
+            query=query,
+            chunks=[],
+            graph_context=HybridGraphContext(),
+            asset_context=[],
+            incidents=[],
+            procedures=[],
+        )
+
+
 class FakeMemory:
     def __init__(self) -> None:
         self.turns: list[ConversationTurn] = []
@@ -82,6 +95,21 @@ class FakeGemini:
         )
 
 
+class FailingGemini:
+    async def generate_grounded_answer(self, prompt: str) -> GeminiGroundedResponse:
+        raise AssertionError("Gemini must not be called without evidence")
+
+
+class QuotaGemini:
+    async def generate_grounded_answer(self, prompt: str) -> GeminiGroundedResponse:
+        raise ResourceExhausted("429 quota exceeded")
+
+
+class BrokenGemini:
+    async def generate_grounded_answer(self, prompt: str) -> GeminiGroundedResponse:
+        raise RuntimeError("provider unavailable")
+
+
 @pytest.mark.asyncio
 async def test_chat_service_grounds_answer_and_stores_memory() -> None:
     memory = FakeMemory()
@@ -94,6 +122,43 @@ async def test_chat_service_grounds_answer_and_stores_memory() -> None:
     assert response.citations[0].chunk_id == "chunk-1"
     assert "P204" in response.related_assets
     assert len(memory.turns) == 2
+
+
+@pytest.mark.asyncio
+async def test_chat_service_returns_evidence_gap_without_model_call() -> None:
+    memory = FakeMemory()
+    service = ChatService(retriever=EmptyRetriever(), memory=memory, gemini_client=FailingGemini())
+
+    response = await service.respond(ChatRequest(session_id="s1", message="What happened in a missing document?"))
+
+    assert response.confidence == 0
+    assert response.citations == []
+    assert response.answer == "No supporting evidence was found in the uploaded documents."
+    assert response.follow_up_questions == ["Upload an SOP", "Upload a maintenance manual", "Upload an incident report"]
+    assert len(memory.turns) == 2
+
+
+@pytest.mark.asyncio
+async def test_chat_service_uses_demo_answer_when_gemini_quota_is_exceeded() -> None:
+    service = ChatService(retriever=FakeRetriever(), memory=FakeMemory(), gemini_client=QuotaGemini())
+
+    response = await service.respond(ChatRequest(session_id="s1", message="What PPE is required?"))
+
+    assert response.answer.startswith("Demo Mode:")
+    assert response.confidence == 0.62
+    assert "P204" in response.related_assets
+
+
+@pytest.mark.asyncio
+async def test_chat_service_uses_evidence_fallback_when_gemini_fails() -> None:
+    service = ChatService(retriever=FakeRetriever(), memory=FakeMemory(), gemini_client=BrokenGemini())
+
+    response = await service.respond(ChatRequest(session_id="s1", message="Why is Pump P204 failing repeatedly?"))
+
+    assert response.answer.startswith("Based on retrieved PlantMind evidence:")
+    assert response.confidence > 0
+    assert response.citations[0].chunk_id == "chunk-1"
+    assert "P204" in response.related_assets
 
 
 @pytest.mark.asyncio

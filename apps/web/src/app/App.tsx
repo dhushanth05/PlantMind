@@ -1,9 +1,13 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { lazy, Suspense, useEffect } from "react";
+import { QueryCache, QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 
 import { AppLayout } from "@/components/layout/AppLayout";
+import { ErrorBoundary } from "@/components/shared/ErrorBoundary";
 import { LoadingState } from "@/components/shared/LoadingState";
+import { OfflineBanner } from "@/components/shared/OfflineBanner";
+import { ToastProvider } from "@/components/shared/Toast";
+import { useToast } from "@/components/shared/toast-context";
 import { DashboardPage } from "@/features/dashboard/DashboardPage";
 import { ModuleWorkspacePage } from "@/features/dashboard/ModuleWorkspacePage";
 import { useAppStore } from "@/stores/app-store";
@@ -29,17 +33,37 @@ const ExecutiveAnalyticsPage = lazy(() =>
   import("@/features/analytics/ExecutiveAnalyticsPage").then((module) => ({ default: module.ExecutiveAnalyticsPage })),
 );
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 45_000,
-      refetchOnWindowFocus: false,
-    },
-  },
-});
-
 export function App() {
+  return (
+    <ErrorBoundary>
+      <ToastProvider>
+        <PlantMindApp />
+      </ToastProvider>
+    </ErrorBoundary>
+  );
+}
+
+function PlantMindApp() {
   const isDarkMode = useAppStore((state) => state.isDarkMode);
+  const { notify } = useToast();
+  const [queryClient] = useState(() => new QueryClient({
+    queryCache: new QueryCache({
+      onError: () => {
+        notify("PlantMind could not refresh one of the live data views.", "error");
+      },
+    }),
+    defaultOptions: {
+      queries: {
+        staleTime: 45_000,
+        refetchOnReconnect: true,
+        refetchOnWindowFocus: false,
+        retry: 2,
+      },
+      mutations: {
+        retry: 1,
+      },
+    },
+  }));
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", isDarkMode);
@@ -47,6 +71,7 @@ export function App() {
 
   return (
     <QueryClientProvider client={queryClient}>
+      <OfflineBanner />
       <Routes>
         <Route element={<AppLayout />}>
           <Route index element={<Navigate to="/dashboard" replace />} />

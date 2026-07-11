@@ -26,6 +26,7 @@ export type ChatMessage = {
   citations?: Citation[];
   relatedAssets?: string[];
   followUpQuestions?: string[];
+  demoMode?: boolean;
   status?: "complete" | "streaming" | "error";
 };
 

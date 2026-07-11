@@ -79,3 +79,26 @@ class DocumentUploadResult(BaseModel):
 class DocumentUploadResponse(BaseModel):
     documents: list[DocumentUploadResult]
 
+
+class DocumentSummary(BaseModel):
+    document_id: str
+    filename: str
+    content_type: str
+    file_size_bytes: int
+    upload_timestamp: datetime
+    status: str
+    page_count: int | None = None
+    extraction_method: str | None = None
+    is_scanned: bool = False
+    processed_at: datetime | None = None
+    failed_at: datetime | None = None
+    error: str | None = None
+    extracted_entities: int = 0
+    chunks_created: int = 0
+    graph_nodes_created: int = 0
+    graph_edges_created: int = 0
+    processing_duration_ms: int | None = None
+
+
+class DocumentListResponse(BaseModel):
+    documents: list[DocumentSummary]

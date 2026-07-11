@@ -2,7 +2,7 @@ import axios from "axios";
 
 import { API_BASE_URL } from "@/lib/api-client";
 
-import type { DocumentUploadResponse, DocumentUploadResult } from "./types";
+import type { DocumentListResponse, DocumentSummary, DocumentUploadResponse, DocumentUploadResult } from "./types";
 
 const documentsClient = axios.create({
   baseURL: API_BASE_URL,
@@ -32,6 +32,11 @@ export async function uploadPdfDocuments(
   });
 
   return normalizeUploadResponse(response.data);
+}
+
+export async function fetchDocuments(): Promise<DocumentSummary[]> {
+  const response = await documentsClient.get<DocumentListResponse>("/documents");
+  return response.data.documents;
 }
 
 export function getUploadErrorMessage(error: unknown) {

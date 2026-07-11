@@ -3,9 +3,15 @@ services:
     build:
       context: .
       dockerfile: infra/docker/api.Dockerfile
+      args:
+        REQUIREMENTS_FILE: requirements.dev.txt
     env_file:
       - path: .env
         required: false
+    environment:
+      MONGODB_URI: mongodb://mongodb:27017/plantmind
+      NEO4J_URI: bolt://neo4j:7687
+      REDIS_URL: redis://redis:6379/0
     ports:
       - "8000:8000"
     volumes:

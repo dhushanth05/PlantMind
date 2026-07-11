@@ -1,0 +1,50 @@
+warning: in the working copy of 'apps/api/app/db/mongodb/client.py', LF will be replaced by CRLF the next time Git touches it
+[1mdiff --git a/apps/api/app/db/mongodb/client.py b/apps/api/app/db/mongodb/client.py[m
+[1mindex 3d14849..09299e7 100644[m
+[1m--- a/apps/api/app/db/mongodb/client.py[m
+[1m+++ b/apps/api/app/db/mongodb/client.py[m
+[36m@@ -1,16 +1,28 @@[m
+[32m+[m[32mimport asyncio[m
+[32m+[m[32mimport logging[m
+[32m+[m
+ from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase[m
+ [m
+ from app.core.config import settings[m
+ [m
+[32m+[m[32mlogger = logging.getLogger(__name__)[m
+[32m+[m
+ [m
+ class MongoDatabase:[m
+     def __init__(self) -> None:[m
+         self._client: AsyncIOMotorClient | None = None[m
+[32m+[m[32m        self._loop_id: int | None = None[m
+ [m
+     @property[m
+     def client(self) -> AsyncIOMotorClient:[m
+[31m-        if self._client is None:[m
+[32m+[m[32m        loop_id = self._current_loop_id()[m
+[32m+[m[32m        if self._client is None or self._loop_id != loop_id:[m
+[32m+[m[32m            if self._client is not None:[m
+[32m+[m[32m                logger.warning("mongodb_client_recreated_for_new_event_loop")[m
+[32m+[m[32m                self._client.close()[m
+[32m+[m[32m            logger.info("mongodb_client_create", extra={"database": settings.mongodb_database})[m
+             self._client = AsyncIOMotorClient(settings.mongodb_uri)[m
+[32m+[m[32m            self._loop_id = loop_id[m
+         return self._client[m
+ [m
+     @property[m
+[36m@@ -21,6 +33,14 @@[m [mclass MongoDatabase:[m
+         if self._client is not None:[m
+             self._client.close()[m
+             self._client = None[m
+[32m+[m[32m            self._loop_id = None[m
+[32m+[m
+[32m+[m[32m    @staticmethod[m
+[32m+[m[32m    def _current_loop_id() -> int | None:[m
+[32m+[m[32m        try:[m
+[32m+[m[32m            return id(asyncio.get_running_loop())[m
+[32m+[m[32m        except RuntimeError:[m
+[32m+[m[32m            return None[m
+ [m
+ [m
+ mongo_database = MongoDatabase()[m

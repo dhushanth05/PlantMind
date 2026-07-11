@@ -53,6 +53,11 @@ export function MessageBubble({ message, onRegenerate }: MessageBubbleProps) {
         {isAssistant ? (
           <div className="mt-2 flex flex-wrap items-center gap-2">
             <ConfidenceBadge confidence={message.confidence} />
+            {message.demoMode ? (
+              <span className="inline-flex h-7 items-center rounded-md border border-amber-200 bg-amber-50 px-2 text-xs font-medium text-amber-800 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+                DEMO MODE
+              </span>
+            ) : null}
             <button
               onClick={copy}
               className="inline-flex h-7 items-center gap-1 rounded-md border border-border px-2 text-xs text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-900"

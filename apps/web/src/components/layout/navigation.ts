@@ -16,7 +16,7 @@ export const navigationItems = [
   { label: "Documents", path: "/documents", icon: FileText },
   { label: "AI Copilot", path: "/copilot", icon: Bot },
   { label: "Knowledge Graph", path: "/graph", icon: GitBranch },
-  { label: "Assets", path: "/assets", icon: Wrench },
+  { label: "Assets", path: "/assets/P204", icon: Wrench },
   { label: "Risk Intelligence", path: "/risk", icon: Gauge },
   { label: "Compliance", path: "/compliance", icon: ShieldCheck },
   { label: "Alerts", path: "/alerts", icon: AlertTriangle },

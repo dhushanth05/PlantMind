@@ -1,7 +1,8 @@
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { Maximize2, Network, Split, X } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
 import "@xyflow/react/dist/style.css";
 
 import { ErrorState } from "@/components/shared/ErrorState";
@@ -28,6 +29,8 @@ export function GraphPage() {
   const [selectedNodeId, setSelectedNodeId] = useState<string | undefined>("eq-p204");
   const [searchResults, setSearchResults] = useState<ApiGraphNode[]>([]);
   const [highlightedIds, setHighlightedIds] = useState<Set<string>>(new Set());
+  const [searchParams] = useSearchParams();
+  const [loadedUrlQuery, setLoadedUrlQuery] = useState<string | null>(null);
 
   const overviewQuery = useQuery({ queryKey: ["graph", "overview"], queryFn: getGraphOverview });
   const analyticsQuery = useQuery({ queryKey: ["graph", "analytics"], queryFn: getGraphAnalytics });
@@ -48,24 +51,45 @@ export function GraphPage() {
     enabled: Boolean(selectedEquipmentId),
   });
 
+  useEffect(() => {
+    const liveEquipmentId = analyticsQuery.data?.most_connected_assets[0]?.equipment_id;
+    if (!liveEquipmentId || centerNodeId !== "P204") {
+      return;
+    }
+    setCenterNodeId(liveEquipmentId);
+    setSelectedNodeId(undefined);
+  }, [analyticsQuery.data, centerNodeId]);
+
   const graph = useMemo(
     () => (subgraph ? toReactFlowGraph(subgraph, filters, selectedNodeId, highlightedIds) : { nodes: [], edges: [] }),
     [filters, highlightedIds, selectedNodeId, subgraph],
   );
 
-  const runSearch = async (query: string) => {
-    const result = await searchGraph(query);
-    setSearchResults(result.nodes);
-    if (result.nodes[0]) {
-      selectAndExpand(result.nodes[0]);
-    }
-  };
-
-  const selectAndExpand = (node: ApiGraphNode) => {
+  const selectAndExpand = useCallback((node: ApiGraphNode) => {
     setSelectedNodeId(node.id);
     setCenterNodeId(String(node.properties.equipment_id ?? node.properties.document_id ?? node.id));
     setSearchResults([]);
-  };
+  }, []);
+
+  const runSearch = useCallback(
+    async (query: string) => {
+      const result = await searchGraph(query);
+      setSearchResults(result.nodes);
+      if (result.nodes[0]) {
+        selectAndExpand(result.nodes[0]);
+      }
+    },
+    [selectAndExpand],
+  );
+
+  useEffect(() => {
+    const query = searchParams.get("q")?.trim();
+    if (!query || loadedUrlQuery === query) {
+      return;
+    }
+    setLoadedUrlQuery(query);
+    void runSearch(query);
+  }, [loadedUrlQuery, runSearch, searchParams]);
 
   const expandNode = (nodeId: string) => {
     const node = subgraph?.nodes.find((item) => item.id === nodeId);

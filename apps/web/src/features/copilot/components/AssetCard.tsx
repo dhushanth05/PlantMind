@@ -1,4 +1,5 @@
-import { Wrench } from "lucide-react";
+import { Network, Wrench } from "lucide-react";
+import { Link } from "react-router-dom";
 
 export function AssetCard({ asset }: { asset: string }) {
   return (
@@ -10,7 +11,22 @@ export function AssetCard({ asset }: { asset: string }) {
         <p className="truncate text-sm font-semibold">{asset}</p>
         <p className="text-xs text-slate-500 dark:text-slate-400">Related industrial asset</p>
       </div>
+      <div className="ml-auto flex shrink-0 items-center gap-1">
+        <Link
+          to={`/assets/${encodeURIComponent(asset)}`}
+          className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-border hover:bg-slate-50 dark:hover:bg-slate-900"
+          title="Open Digital Twin"
+        >
+          <Wrench className="h-3.5 w-3.5" />
+        </Link>
+        <Link
+          to={`/graph?q=${encodeURIComponent(asset)}`}
+          className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-border hover:bg-slate-50 dark:hover:bg-slate-900"
+          title="Open in Graph"
+        >
+          <Network className="h-3.5 w-3.5" />
+        </Link>
+      </div>
     </article>
   );
 }
-

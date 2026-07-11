@@ -1,5 +1,6 @@
 import pytest
 from fastapi.testclient import TestClient
+from neo4j.time import DateTime
 
 from app.api.v1.routes.graph import get_graph_explorer_service
 from app.main import app
@@ -142,3 +143,18 @@ def test_graph_routes_are_registered() -> None:
         assert response.json()["total_nodes"] == 3
     finally:
         app.dependency_overrides.clear()
+
+
+def test_graph_service_normalizes_neo4j_temporal_properties() -> None:
+    raw = {
+        "id": "neo4j-7",
+        "labels": ["FailureMode"],
+        "failure_mode_id": "seal-leakage",
+        "updated_at": DateTime(2026, 7, 9, 4, 30, 0),
+    }
+
+    node = GraphExplorerService._normalize_node(raw)
+
+    assert node.labels == ["FailureMode"]
+    assert node.properties["failure_mode_id"] == "seal-leakage"
+    assert isinstance(node.properties["updated_at"], str)
