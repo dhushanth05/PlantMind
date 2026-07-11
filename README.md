@@ -471,7 +471,10 @@ These items are future work, not current capabilities:
 
 | Role | Name |
 | --- | --- |
-| Creator / Developer | Dhushanth S |
+| Creator / Developer | Dhushanth Srinivasa |
+| Team Member | Jayakeerthi B S |
+| Team Member | Manoj K M |
+| Team Member | Praveenkumar M |
 
 ## License
 
