@@ -1,34 +1,41 @@
+<div align="center">
+
 # 🌿 PlantMind
 
-> **AI-Powered Industrial Knowledge Intelligence Platform**
+### AI-Powered Industrial Knowledge Intelligence Platform
 
-Transform industrial documents into searchable operational intelligence using AI, hybrid retrieval, knowledge graphs, and a grounded AI copilot.
+Transform industrial PDFs into searchable operational intelligence with AI-powered ingestion, hybrid retrieval, knowledge graphs, citation-aware copilot answers, analytics dashboards, and demo-safe factory reset.
 
----
+![PlantMind Dashboard Screenshot Placeholder](docs/screenshots/dashboard.png)
 
-<p align="center">
-  <img src="docs/screenshots/dashboard.png" width="90%">
-</p>
-> Industrial knowledge intelligence for plant teams: upload technical PDFs, extract evidence, explore equipment relationships, ask a grounded copilot, review operational analytics, and reset demo data safely.
+![Python](https://img.shields.io/badge/Python-3.12-3776AB?style=for-the-badge&logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688?style=for-the-badge&logo=fastapi&logoColor=white)
+![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=111111)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
+![MongoDB](https://img.shields.io/badge/MongoDB-7-47A248?style=for-the-badge&logo=mongodb&logoColor=white)
+![Neo4j](https://img.shields.io/badge/Neo4j-5-4581C3?style=for-the-badge&logo=neo4j&logoColor=white)
+![Redis](https://img.shields.io/badge/Redis-7-DC382D?style=for-the-badge&logo=redis&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?style=for-the-badge&logo=docker&logoColor=white)
 
-PlantMind is a hackathon-ready full-stack application for turning industrial documents into searchable operational knowledge. It combines a FastAPI ingestion and intelligence backend with a React workspace for document upload, hybrid search, graph exploration, asset context, copilot Q&A, dashboards, and demo-safe factory reset.
+</div>
 
 ## Contents
 
 - [Overview](#overview)
 - [Problem Statement](#problem-statement)
+- [Highlights](#-highlights)
 - [Key Features](#key-features)
 - [Architecture](#architecture)
 - [Technology Stack](#technology-stack)
 - [Project Structure](#project-structure)
-- [Installation and Setup](#installation-and-setup)
+- [Getting Started](#getting-started)
 - [Environment Variables](#environment-variables)
 - [How to Run](#how-to-run)
 - [API Overview](#api-overview)
 - [Screenshots](#screenshots)
 - [Demo Workflow](#demo-workflow)
 - [Factory Reset](#factory-reset)
-- [Future Improvements](#future-improvements)
+- [Roadmap](#-roadmap)
 - [Team / Author](#team--author)
 - [License](#license)
 
@@ -48,52 +55,73 @@ The codebase is organized as a monorepo with a Python API, TypeScript frontend, 
 
 Plant knowledge is usually scattered across static PDFs, work orders, inspection reports, and incident documents. During operational reviews or abnormal events, teams need fast answers with traceable evidence, not just keyword matches. PlantMind addresses this by combining document ingestion, hybrid retrieval, graph context, and citation-aware chat into one plant intelligence workspace.
 
+## 🚀 Highlights
+
+- 📄 **Intelligent PDF Ingestion**: Multi-file PDF upload with validation, pipeline progress states, and upload history.
+- 🔎 **Hybrid Semantic Search**: Evidence retrieval with graph context, ranking, confidence scoring, and Redis caching.
+- 🤖 **AI Copilot**: Retrieval-grounded chat with citations, conversation memory, fallback evidence answers, and follow-up prompts.
+- 🕸️ **Knowledge Graph Explorer**: React Flow graph exploration with search, filters, node expansion, node drawer, and analytics.
+- 🏭 **Digital Asset Twin**: Asset-specific digital twin view backed by API services and tests.
+- 📊 **Executive Analytics**: Operational analytics, risk, compliance, alerts, and dashboard views.
+- ⚠️ **Risk Dashboard**: Risk intelligence endpoint and frontend dashboard for operational review.
+- 🧹 **Factory Reset**: Guarded reset workflow that clears runtime demo data while protecting source files.
+
 ## Key Features
 
 Only features implemented in this repository are listed here.
 
 | Area | Implemented capability |
 | --- | --- |
-| Document ingestion | Multi-PDF upload UI, PDF validation, size limit enforcement, persistent file storage, document records, text/chunk/entity/graph/embedding pipeline hooks, upload history, retry/cancel UI states |
-| Hybrid search | `/api/v1/search/query` endpoint using a `HybridRetriever`, evidence ranking, graph context, confidence score, and Redis response caching |
-| AI copilot | Chat endpoint with conversation memory, retrieval-grounded prompt construction, Gemini client integration, citation resolution, fallback evidence answers, follow-up questions, and related assets |
-| Knowledge graph explorer | Graph overview, node search, subgraph loading, equipment context, graph analytics, React Flow canvas, filters, search, node drawer, neighbor highlighting, and analytics sidebar |
-| Asset digital twin | Asset-specific digital twin route and frontend page for `/assets/:assetId`, backed by asset services and tests |
-| Dashboards | Main dashboard, risk dashboard, compliance dashboard, alerts dashboard, and executive analytics frontend routes backed by API services |
-| Factory Reset | Settings UI danger zone and `DELETE /api/v1/admin/factory-reset` endpoint that clears runtime MongoDB collections, Neo4j graph data, Redis cache keys, uploaded files, and temporary processing folders |
-| App shell | React Router workspace, lazy-loaded feature pages, TanStack Query caching, Zustand app store, dark mode support, offline banner, toast notifications, and error boundaries |
-| Infrastructure | Docker Compose services for API, web, MongoDB, Neo4j with APOC, and Redis |
-| Tests | Backend tests for chat copilot, document pipeline, hybrid search, graph explorer, dashboard, risk dashboard, asset digital twin, and factory reset |
+| **Document ingestion** | Multi-PDF upload UI, PDF validation, size limit enforcement, persistent file storage, document records, text/chunk/entity/graph/embedding pipeline hooks, upload history, retry/cancel UI states |
+| **Hybrid search** | `/api/v1/search/query` endpoint using a `HybridRetriever`, evidence ranking, graph context, confidence score, and Redis response caching |
+| **AI copilot** | Chat endpoint with conversation memory, retrieval-grounded prompt construction, Gemini client integration, citation resolution, fallback evidence answers, follow-up questions, and related assets |
+| **Knowledge graph explorer** | Graph overview, node search, subgraph loading, equipment context, graph analytics, React Flow canvas, filters, search, node drawer, neighbor highlighting, and analytics sidebar |
+| **Asset digital twin** | Asset-specific digital twin route and frontend page for `/assets/:assetId`, backed by asset services and tests |
+| **Dashboards** | Main dashboard, risk dashboard, compliance dashboard, alerts dashboard, and executive analytics frontend routes backed by API services |
+| **Factory Reset** | Settings UI danger zone and `DELETE /api/v1/admin/factory-reset` endpoint that clears runtime MongoDB collections, Neo4j graph data, Redis cache keys, uploaded files, and temporary processing folders |
+| **App shell** | React Router workspace, lazy-loaded feature pages, TanStack Query caching, Zustand app store, dark mode support, offline banner, toast notifications, and error boundaries |
+| **Infrastructure** | Docker Compose services for API, web, MongoDB, Neo4j with APOC, and Redis |
+| **Tests** | Backend tests for chat copilot, document pipeline, hybrid search, graph explorer, dashboard, risk dashboard, asset digital twin, and factory reset |
 
 ## Architecture
 
 ```text
-                    +-----------------------------+
-                    | React + Vite web workspace  |
-                    | http://localhost:5173       |
-                    +--------------+--------------+
-                                   |
-                                   | REST /api/v1
-                                   v
-                    +-----------------------------+
-                    | FastAPI backend             |
-                    | http://localhost:8000       |
-                    +---+-------------+-------+---+
-                        |             |       |
-        document files  |             |       | cache / memory
-                        v             v       v
-              +---------+--+    +-----+--+  +-+------+
-              | MongoDB    |    | Neo4j  |  | Redis  |
-              | metadata,  |    | graph  |  | cache  |
-              | chunks     |    | data   |  |        |
-              +------------+    +--------+  +--------+
-                        |
-                        v
-              +-----------------------------+
-              | AI services                 |
-              | embeddings, extraction,     |
-              | citations, Gemini chat      |
-              +-----------------------------+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                                  PlantMind                                   │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+  ┌──────────────────────────────┐
+  │ React + Vite Web Workspace   │
+  │ http://localhost:5173        │
+  │                              │
+  │ Documents · Graph · Copilot  │
+  │ Risk · Compliance · Alerts   │
+  │ Analytics · Settings         │
+  └───────────────┬──────────────┘
+                  │ REST /api/v1
+                  ▼
+  ┌──────────────────────────────┐
+  │ FastAPI Backend              │
+  │ http://localhost:8000        │
+  │                              │
+  │ Routes · Services · Agents   │
+  │ Workflows · AI Integrations  │
+  └───────┬──────────┬───────────┘
+          │          │
+          │          ├─────────────────────────────┐
+          │          │                             │
+          ▼          ▼                             ▼
+  ┌────────────┐ ┌────────────┐             ┌────────────┐
+  │ MongoDB    │ │ Neo4j      │             │ Redis      │
+  │ metadata   │ │ knowledge  │             │ cache and  │
+  │ chunks     │ │ graph      │             │ memory     │
+  └────────────┘ └────────────┘             └────────────┘
+          │
+          ▼
+  ┌──────────────────────────────┐
+  │ Uploaded PDF Storage         │
+  │ DOCUMENT_STORAGE_ROOT        │
+  └──────────────────────────────┘
 ```
 
 ### Backend Flow
@@ -113,55 +141,55 @@ Only features implemented in this repository are listed here.
 
 ## Technology Stack
 
-| Layer | Technologies |
+| Group | Technologies |
 | --- | --- |
-| Frontend | React 19, TypeScript, Vite 6, React Router 7, TanStack Query 5, Zustand, Tailwind CSS, Framer Motion |
-| UI / Visualization | Radix UI primitives, Lucide icons, React Flow (`@xyflow/react`), React Markdown, Highlight.js |
-| Backend | Python, FastAPI, Uvicorn, Pydantic v2, Pydantic Settings |
-| AI / Retrieval | Google Generative AI client, LangGraph, LangChain Core, embedding/entity/citation service modules |
-| Data | MongoDB, Neo4j 5 Community with APOC, Redis |
-| Document Processing | `pdfplumber`, `PyPDF2`, `python-multipart` |
-| Testing / Quality | Pytest, pytest-asyncio, Ruff, MyPy, ESLint, TypeScript compiler |
-| DevOps | Docker Compose, custom API and web Dockerfiles |
+| **Frontend** | React 19, TypeScript, Vite 6, React Router 7, TanStack Query 5, Zustand, Tailwind CSS, Framer Motion |
+| **Backend** | Python, FastAPI, Uvicorn, Pydantic v2, Pydantic Settings |
+| **AI** | Google Generative AI client, LangGraph, LangChain Core, embedding/entity/citation service modules |
+| **Databases** | MongoDB, Neo4j 5 Community with APOC, Redis |
+| **Document Processing** | `pdfplumber`, `PyPDF2`, `python-multipart` |
+| **UI / Visualization** | Radix UI primitives, Lucide icons, React Flow (`@xyflow/react`), React Markdown, Highlight.js |
+| **DevOps** | Docker Compose, custom API and web Dockerfiles |
+| **Testing** | Pytest, pytest-asyncio, Ruff, MyPy, ESLint, TypeScript compiler |
 
 ## Project Structure
 
 ```text
-PlantMind/
-+-- apps/
-|   +-- api/
-|   |   +-- app/
-|   |   |   +-- api/v1/routes/       # FastAPI route modules
-|   |   |   +-- agents/              # ingestion and intelligence agents
-|   |   |   +-- core/                # config and logging
-|   |   |   +-- db/                  # MongoDB, Neo4j, Redis adapters
-|   |   |   +-- domain/              # Pydantic schemas and domain types
-|   |   |   +-- services/            # business and AI services
-|   |   |   +-- workflows/           # ingestion workflow orchestration
-|   |   +-- data/documents/          # local sample/runtime document files
-|   |   +-- tests/                   # backend test suite
-|   |   +-- requirements*.txt
-|   +-- web/
-|       +-- src/
-|       |   +-- app/                 # React app shell and routes
-|       |   +-- components/          # layout, shared, dashboard, UI components
-|       |   +-- features/            # documents, graph, copilot, dashboards, settings
-|       |   +-- lib/                 # API client and query helpers
-|       |   +-- stores/              # Zustand app store
-|       +-- package.json
-+-- docs/architecture/               # architecture documentation
-+-- infra/
-|   +-- docker/                      # API and web Dockerfiles
-|   +-- mongo/                       # MongoDB initialization notes
-|   +-- neo4j/                       # Neo4j import area and notes
-|   +-- redis/                       # Redis notes
-+-- scripts/                         # developer automation notes
-+-- docker-compose.yml
-+-- pytest.ini
-+-- README.md
+PlantMind
+├─ apps
+│  ├─ api
+│  │  ├─ app
+│  │  │  ├─ api/v1/routes       FastAPI route modules
+│  │  │  ├─ agents              ingestion and intelligence agents
+│  │  │  ├─ core                config and logging
+│  │  │  ├─ db                  MongoDB, Neo4j, Redis adapters
+│  │  │  ├─ domain              Pydantic schemas and domain types
+│  │  │  ├─ services            business and AI services
+│  │  │  └─ workflows           ingestion workflow orchestration
+│  │  ├─ data/documents         local sample/runtime document files
+│  │  ├─ tests                  backend test suite
+│  │  └─ requirements*.txt
+│  └─ web
+│     ├─ src
+│     │  ├─ app                 React app shell and routes
+│     │  ├─ components          layout, shared, dashboard, UI components
+│     │  ├─ features            documents, graph, copilot, dashboards, settings
+│     │  ├─ lib                 API client and query helpers
+│     │  └─ stores              Zustand app store
+│     └─ package.json
+├─ docs/architecture              architecture documentation
+├─ infra
+│  ├─ docker                    API and web Dockerfiles
+│  ├─ mongo                     MongoDB initialization notes
+│  ├─ neo4j                     Neo4j import area and notes
+│  └─ redis                     Redis notes
+├─ scripts                       developer automation notes
+├─ docker-compose.yml
+├─ pytest.ini
+└─ README.md
 ```
 
-## Installation and Setup
+## Getting Started
 
 ### Prerequisites
 
@@ -171,7 +199,8 @@ PlantMind/
 | Node.js + npm | Run the frontend outside Docker |
 | Python 3.12 recommended | Run the backend outside Docker |
 
-### Option 1: Docker Compose
+<details open>
+<summary><strong>🐳 Docker: full-stack setup</strong></summary>
 
 From the repository root:
 
@@ -192,7 +221,10 @@ Services started by Compose:
 | Neo4j Bolt | `localhost:7687` |
 | Redis | `localhost:6379` |
 
-### Option 2: Local Backend + Frontend
+</details>
+
+<details>
+<summary><strong>🧑‍💻 Local Development: dependencies with Docker</strong></summary>
 
 Start MongoDB, Neo4j, and Redis first. The easiest local path is to use Docker Compose for dependencies:
 
@@ -200,7 +232,19 @@ Start MongoDB, Neo4j, and Redis first. The easiest local path is to use Docker C
 docker compose up -d mongodb neo4j redis
 ```
 
-Then run the backend:
+For local non-Docker backend development, point service URLs at localhost in `.env`:
+
+```bash
+MONGODB_URI=mongodb://localhost:27017/plantmind
+NEO4J_URI=bolt://localhost:7687
+REDIS_URL=redis://localhost:6379/0
+DOCUMENT_STORAGE_ROOT=./data/documents
+```
+
+</details>
+
+<details>
+<summary><strong>⚙️ Backend: FastAPI app</strong></summary>
 
 ```bash
 cd apps/api
@@ -210,7 +254,12 @@ python -m pip install -r requirements.dev.txt
 uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-In a second terminal, run the frontend:
+> `apps/api/requirements.txt` delegates to `requirements.dev.txt`, which includes production requirements plus test and lint tooling.
+
+</details>
+
+<details>
+<summary><strong>🎨 Frontend: React app</strong></summary>
 
 ```bash
 cd apps/web
@@ -220,7 +269,7 @@ npm run dev
 
 Open `http://localhost:5173`.
 
-> Note: `apps/api/requirements.txt` delegates to `requirements.dev.txt`, which includes production requirements plus test and lint tooling.
+</details>
 
 ## Environment Variables
 
@@ -262,57 +311,16 @@ GEMINI_API_KEY=
 VITE_API_BASE_URL=http://localhost:8000/api/v1
 ```
 
-For local non-Docker backend development, point service URLs at localhost:
-
-```bash
-MONGODB_URI=mongodb://localhost:27017/plantmind
-NEO4J_URI=bolt://localhost:7687
-REDIS_URL=redis://localhost:6379/0
-DOCUMENT_STORAGE_ROOT=./data/documents
-```
-
 ## How to Run
 
-### Full Stack
-
-```bash
-docker compose up --build
-```
-
-### Backend Only
-
-```bash
-cd apps/api
-uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
-```
-
-### Frontend Only
-
-```bash
-cd apps/web
-npm run dev
-```
-
-### Backend Tests
-
-```bash
-cd apps/api
-pytest
-```
-
-### Frontend Build
-
-```bash
-cd apps/web
-npm run build
-```
-
-### Frontend Lint
-
-```bash
-cd apps/web
-npm run lint
-```
+| Task | Command |
+| --- | --- |
+| Full stack | `docker compose up --build` |
+| Backend only | `cd apps/api` then `uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload` |
+| Frontend only | `cd apps/web` then `npm run dev` |
+| Backend tests | `cd apps/api` then `pytest` |
+| Frontend build | `cd apps/web` then `npm run build` |
+| Frontend lint | `cd apps/web` then `npm run lint` |
 
 ## API Overview
 
@@ -330,7 +338,7 @@ http://localhost:8000/docs
 
 ### Major Endpoints
 
-| Method | Endpoint | Purpose |
+| Method | Endpoint | What it does |
 | --- | --- | --- |
 | `GET` | `/auth/health` | Authentication module health check |
 | `GET` | `/documents/health` | Document module health check |
@@ -389,21 +397,41 @@ curl -X DELETE "http://localhost:8000/api/v1/admin/factory-reset"
 
 ## Screenshots
 
-Add screenshots to `docs/screenshots/` and update the paths below.
+Add screenshots to `docs/screenshots/` and update the placeholder paths below.
 
-| Screen | Placeholder | Caption |
+| Dashboard | Upload | Copilot |
 | --- | --- | --- |
-| Dashboard | `docs/screenshots/dashboard.png` | PlantMind operational landing dashboard |
-| Document Upload | `docs/screenshots/document-upload.png` | Multi-PDF upload queue with ingestion stages |
-| Hybrid Search | `docs/screenshots/search-results.png` | Evidence retrieval with confidence and graph context |
-| Knowledge Graph | `docs/screenshots/knowledge-graph.png` | React Flow graph explorer with node drawer and analytics |
-| AI Copilot | `docs/screenshots/copilot.png` | Retrieval-grounded copilot answer with citations |
-| Analytics | `docs/screenshots/analytics.png` | Executive analytics workspace |
-| Factory Reset | `docs/screenshots/factory-reset.png` | Guarded reset dialog in Settings |
+| ![Dashboard Screenshot Placeholder](docs/screenshots/dashboard.png) | ![Document Upload Screenshot Placeholder](docs/screenshots/document-upload.png) | ![AI Copilot Screenshot Placeholder](docs/screenshots/copilot.png) |
+| Operational landing dashboard | Multi-PDF upload queue with ingestion stages | Retrieval-grounded copilot answer with citations |
+
+| Knowledge Graph | Analytics | Factory Reset |
+| --- | --- | --- |
+| ![Knowledge Graph Screenshot Placeholder](docs/screenshots/knowledge-graph.png) | ![Analytics Screenshot Placeholder](docs/screenshots/analytics.png) | ![Factory Reset Screenshot Placeholder](docs/screenshots/factory-reset.png) |
+| React Flow graph explorer with node drawer and analytics | Executive analytics workspace | Guarded reset dialog in Settings |
+
+Additional placeholder:
+
+![Hybrid Search Screenshot Placeholder](docs/screenshots/search-results.png)
 
 ## Demo Workflow
 
 Use this path for a hackathon judging demo:
+
+```text
+Upload PDFs
+    ↓
+AI Processing
+    ↓
+Knowledge Graph
+    ↓
+Hybrid Search
+    ↓
+AI Copilot
+    ↓
+Executive Analytics
+    ↓
+Factory Reset
+```
 
 1. **Upload**: Open `/documents`, drag in one or more PDF files, and watch the queue move through upload, extraction, chunking, entity extraction, graph, embeddings, risk, and digital twin stages.
 2. **Search**: Call `/api/v1/search/query` or use app flows that depend on search to retrieve evidence and graph context.
@@ -429,18 +457,18 @@ The reset service clears:
 
 The reset service refuses to run against protected source-tree paths such as the repository root, `apps`, `infra`, `scripts`, `docs`, `.git`, or `.github`.
 
-## Future Improvements
+## 🚀 Roadmap
 
 These items are future work, not current capabilities:
 
-- User authentication and role-based authorization beyond the current health route scaffold.
-- Background job queue for long-running ingestion instead of request-bound processing.
-- Production-grade OCR workflow for scanned PDFs.
-- Richer vector database/index management and operational observability.
-- Human review workflows for extracted entities and graph relationships.
-- CI pipeline, deployment manifests, and cloud environment templates.
-- Persisted screenshot assets and a polished public demo video.
-- Expanded model provider configuration and evaluation harnesses for copilot answers.
+- [ ] User authentication and role-based authorization beyond the current health route scaffold.
+- [ ] Background job queue for long-running ingestion instead of request-bound processing.
+- [ ] Production-grade OCR workflow for scanned PDFs.
+- [ ] Richer vector database/index management and operational observability.
+- [ ] Human review workflows for extracted entities and graph relationships.
+- [ ] CI pipeline, deployment manifests, and cloud environment templates.
+- [ ] Persisted screenshot assets and a polished public demo video.
+- [ ] Expanded model provider configuration and evaluation harnesses for copilot answers.
 
 ## Team / Author
 
@@ -451,3 +479,9 @@ These items are future work, not current capabilities:
 ## License
 
 No license file is currently included in this repository. Add a `LICENSE` file before distributing, publishing, or reusing the project outside the current workspace.
+
+<div align="center">
+
+Built with ❤️ for ET AI Hackathon 2.0
+
+</div>
